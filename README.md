@@ -8,7 +8,7 @@ Node-RED flow for integrating Strava into the Live Dashboard (Živý Obraz).
    Follow the instructions here: [Strava API Getting Started](https://developers.strava.com/docs/getting-started/).
 2. **Import the Node-RED JSON file:**  
    Use the provided JSON file to set up the flow in Node-RED.
-3. **Prepare your Živý obraz ID - https://zivyobraz.eu/?page=muj-ucet&hodnoty=1
+3. **Prepare your Živý obraz ID** - https://zivyobraz.eu/?page=muj-ucet&hodnoty=1
 
 ---
 
