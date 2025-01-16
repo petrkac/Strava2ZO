@@ -1,0 +1,327 @@
+[
+    {
+        "id": "34aa5bf58db7f80d",
+        "type": "function",
+        "z": "044cd761fdbd637b",
+        "name": "Set Constants",
+        "func": "// Strava API přihlašovací údaje\nflow.set(\"stravaAuth\", {\n    client_id: \"XXXXXX\",\n    client_secret: \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    refresh_token: \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n    grant_type: \"refresh_token\"\n});\n\n// 🌟 Nastavení konstant\nflow.set(\"importKey\", \"xxxxxxxxxxxxxxx\"); // Import key pro živý obraz\nflow.set(\"clubId\", \"XXXXXXX\"); // ID klubu na Strava\nflow.set(\"maxRunners\", 9); // Maximální počet běžců odesílaných na živý obraz\n\n\n// 🌟 Nastavení poslední aktivity - ta už se nepočítá\nflow.set(\"lastActivity\", {\n    name: \"Afternoon Run\",\n    distance: 21326.8\n});\n\nnode.warn(\"✅ Konstanty byly úspěšně nastaveny do flow contextu.\");\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 60,
+        "wires": [
+            [
+                "bf626e21cfa7d862",
+                "53de14fe6bef6cbc"
+            ]
+        ]
+    },
+    {
+        "id": "104161de28589bac",
+        "type": "inject",
+        "z": "044cd761fdbd637b",
+        "name": "Get New Access Token",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "14400",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 60,
+        "wires": [
+            [
+                "34aa5bf58db7f80d"
+            ]
+        ]
+    },
+    {
+        "id": "bf626e21cfa7d862",
+        "type": "function",
+        "z": "044cd761fdbd637b",
+        "name": "Prepare Token Request",
+        "func": "// 🌟 Načtení Strava API přihlašovacích údajů\nconst auth = flow.get(\"stravaAuth\");\n\nmsg.payload = {\n    client_id: auth.client_id,\n    client_secret: auth.client_secret,\n    refresh_token: auth.refresh_token,\n    grant_type: auth.grant_type\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 220,
+        "wires": [
+            [
+                "ce89973b37dc8607"
+            ]
+        ]
+    },
+    {
+        "id": "ce89973b37dc8607",
+        "type": "http request",
+        "z": "044cd761fdbd637b",
+        "name": "Request New Access Token",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://www.strava.com/api/v3/oauth/token",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 600,
+        "y": 220,
+        "wires": [
+            [
+                "b88bf7a781e02595"
+            ]
+        ]
+    },
+    {
+        "id": "b88bf7a781e02595",
+        "type": "change",
+        "z": "044cd761fdbd637b",
+        "name": "Save Access Token",
+        "rules": [
+            {
+                "t": "set",
+                "p": "access_token",
+                "pt": "flow",
+                "to": "msg.payload.access_token",
+                "tot": "msg"
+            }
+        ],
+        "x": 820,
+        "y": 220,
+        "wires": [
+            [
+                "6040e0f304d5317c"
+            ]
+        ]
+    },
+    {
+        "id": "6040e0f304d5317c",
+        "type": "inject",
+        "z": "044cd761fdbd637b",
+        "name": "Start Fetching Activities",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "dea186e9fcde61ae"
+            ]
+        ]
+    },
+    {
+        "id": "dea186e9fcde61ae",
+        "type": "change",
+        "z": "044cd761fdbd637b",
+        "name": "Reset Paging",
+        "rules": [
+            {
+                "t": "set",
+                "p": "page",
+                "pt": "flow",
+                "to": "1",
+                "tot": "num"
+            }
+        ],
+        "x": 380,
+        "y": 300,
+        "wires": [
+            [
+                "cb1ea5f2eb7957f8"
+            ]
+        ]
+    },
+    {
+        "id": "cb1ea5f2eb7957f8",
+        "type": "change",
+        "z": "044cd761fdbd637b",
+        "name": "Set Authorization Header",
+        "rules": [
+            {
+                "t": "set",
+                "p": "headers.Authorization",
+                "pt": "msg",
+                "to": "\"Bearer \" & $flowContext(\"access_token\")",
+                "tot": "jsonata"
+            }
+        ],
+        "x": 600,
+        "y": 300,
+        "wires": [
+            [
+                "950d6bbd9ed5d2d6"
+            ]
+        ]
+    },
+    {
+        "id": "950d6bbd9ed5d2d6",
+        "type": "change",
+        "z": "044cd761fdbd637b",
+        "name": "Set Strava API URL",
+        "rules": [
+            {
+                "t": "set",
+                "p": "url",
+                "pt": "msg",
+                "to": "\"https://www.strava.com/api/v3/clubs/\" & $flowContext(\"clubId\") & \"/activities?per_page=50&page=\" & $flowContext(\"page\")",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 820,
+        "y": 300,
+        "wires": [
+            [
+                "e5dad85a2280e013"
+            ]
+        ]
+    },
+    {
+        "id": "e5dad85a2280e013",
+        "type": "http request",
+        "z": "044cd761fdbd637b",
+        "name": "Get Strava Club Activities",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1060,
+        "y": 300,
+        "wires": [
+            [
+                "4565c07c18332f37"
+            ]
+        ]
+    },
+    {
+        "id": "4565c07c18332f37",
+        "type": "function",
+        "z": "044cd761fdbd637b",
+        "name": "Process Activities",
+        "func": "// 🌟 Process Activities\nlet activities = msg.payload;\n\nif (!Array.isArray(activities)) {\n    node.error(\"❌ msg.payload neobsahuje platná data aktivit.\");\n    return null;\n}\n\n// 💾 Načteme všechny běžce z aktivit\nlet runners = {};\nactivities.forEach(activity => {\n    let key = activity.athlete.firstname + \" \" + activity.athlete.lastname;\n    if (!runners[key]) {\n        runners[key] = { name: key, distance: 0 };\n    }\n});\n\n// 🌟 Načtení poslední započítané aktivity z flow\nconst lastActivity = flow.get(\"lastActivity\");\nnode.warn(`🔍 Načtená poslední aktivita: ${JSON.stringify(lastActivity)}`);\n\nlet stopCounting = false; // Přerušení načítání po poslední aktivitě\n\n// 🏃‍♂️ Procházíme aktivity a sčítáme validní vzdálenosti\nactivities.forEach(activity => {\n    let key = activity.athlete.firstname + \" \" + activity.athlete.lastname;\n\n    // Logujeme informace o aktivitě\n    // node.warn(`🔍 Zpracováváme aktivitu: Jméno: ${key}, Název: ${activity.name}, Typ: ${activity.sport_type}, Vzdálenost: ${activity.distance} m`);\n\n    // Pokud najdeme poslední započítanou aktivitu, zastavíme počítání\n    if (\n        lastActivity &&\n        // key.trim() === lastActivity.athlete.trim() &&\n        activity.name.trim() === lastActivity.name.trim() &&\n        Math.abs(activity.distance - lastActivity.distance) < 0.1 // Přesné porovnání vzdálenosti\n    ) {\n        node.warn(`🚨 Nalezena poslední započítaná aktivita: \"${activity.name}\" (${activity.distance} m). Zastavujeme načítání.`);\n        stopCounting = true;\n    }\n\n    // Přičítáme pouze platné aktivity\n    if (!stopCounting && (activity.sport_type === \"Run\" || activity.sport_type === \"Walk\")) {\n        runners[key].distance += activity.distance;\n    }\n});\n\n// 📌 Převod na pole a řazení podle vzdálenosti\nmsg.payload = Object.values(runners)\n    .map(runner => ({\n        name: runner.name,\n        distance_km: Number((runner.distance / 1000).toFixed(2)) // Metry → Kilometry, a přetypujeme na číslo\n    }))\n    .sort((a, b) => b.distance_km - a.distance_km); // Seřazení sestupně podle km\n\n// 📡 Uložíme běžce do flow pro další zpracování\nflow.set(\"runners\", runners);\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1290,
+        "y": 300,
+        "wires": [
+            [
+                "3c2538c181cd0d92"
+            ]
+        ]
+    },
+    {
+        "id": "3c2538c181cd0d92",
+        "type": "function",
+        "z": "044cd761fdbd637b",
+        "name": "Build URL for Živý Obraz",
+        "func": "// 🌟 Načtení konstant\nconst importKey = flow.get(\"importKey\");\nconst maxRunners = flow.get(\"maxRunners\");\n\nlet url = `https://in.zivyobraz.eu/?import_key=${importKey}`;\nmsg.payload.slice(0, maxRunners).forEach((runner, index) => {\n    url += `&Bezec${index + 1}jmeno=${encodeURIComponent(runner.name)}&Bezec${index + 1}km=${encodeURIComponent(runner.distance_km)}`;\n});\n\nmsg.url = url;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1540,
+        "y": 300,
+        "wires": [
+            [
+                "0430a00dc7a58bd1"
+            ]
+        ]
+    },
+    {
+        "id": "0430a00dc7a58bd1",
+        "type": "http request",
+        "z": "044cd761fdbd637b",
+        "name": "Send Data to Živý Obraz",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "x": 1810,
+        "y": 300,
+        "wires": [
+            [
+                "9a71f45e1a4365ca"
+            ]
+        ]
+    },
+    {
+        "id": "9a71f45e1a4365ca",
+        "type": "debug",
+        "z": "044cd761fdbd637b",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1900,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "53de14fe6bef6cbc",
+        "type": "debug",
+        "z": "044cd761fdbd637b",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 60,
+        "wires": []
+    }
+]
